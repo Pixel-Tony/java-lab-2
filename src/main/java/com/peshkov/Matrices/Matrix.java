@@ -1,6 +1,7 @@
 package com.peshkov.Matrices;
 
-import org.jetbrains.annotations.NotNull;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class Matrix extends MatrixBase {
     public Matrix() {
@@ -11,6 +12,14 @@ public class Matrix extends MatrixBase {
         super(height, width);
     }
 
+    public Matrix(int height, int width, Function<Integer, Float> supply) {
+        super(height, width, supply);
+    }
+
+    public Matrix(int height, int width, Supplier<Float> supply) {
+        super(height, width, supply);
+    }
+
     public Matrix(MatrixBase other) {
         super(other);
     }
@@ -19,82 +28,55 @@ public class Matrix extends MatrixBase {
         super(height, width, min, max);
     }
 
-    public Matrix(float @NotNull ... values) {
+    public Matrix(float[] values) {
         super(values);
     }
 
-    public float get(int row, int column) {
-        super.getCheck(row, column);
-        return matrix[row * columns + column];
-    }
-
     public Matrix getRow(int index) {
-        super.getRowCheck(index);
-        var m = new Matrix(1, columns);
-        System.arraycopy(matrix, index * columns, m.matrix, 0, columns);
-        return m;
+        return (Matrix) super.getRow(index);
     }
 
     public Matrix getColumn(int index) {
-        super.getColumnCheck(index);
-        var m = new Matrix(rows, 1);
-        for (int i = 0; i < rows; ++i) {
-            m.matrix[i] = matrix[i * columns + index];
-        }
-        return m;
+        return (Matrix) super.getColumn(index);
     }
 
-    public void set(int row, int column, float value) {
-        super.setCheck(row, column);
-        matrix[row * columns + column] = value;
+    public Matrix set(int row, int column, float value) {
+        return (Matrix) set(this, row, column, value);
     }
 
-    public void setRow(int index, float[] row) {
-        setRow(index, new Matrix(row));
+    public Matrix setRow(int index, float[] row) {
+        return (Matrix) setRow(this, index, row);
     }
 
-    public void setRow(int index, Matrix row) {
-        super.setRowCheck(index, row);
-        System.arraycopy(row.matrix, 0, matrix, index * columns, columns);
+    public Matrix setRow(int index, MatrixBase row) {
+        return (Matrix) setRow(this, index, row);
     }
 
-    public void setColumn(int index, Matrix column) {
-        super.setColumnCheck(index, column);
-        for (int i = 0; i < rows; ++i) {
-            matrix[i * columns + index] = column.matrix[i];
-        }
+    public Matrix setColumn(int index, float[] column) {
+        return (Matrix) setColumn(this, index, column);
     }
 
-    public static Matrix mul(MatrixBase left, MatrixBase right) {
-        baseMulCheck(left, right);
-        var m = new Matrix(left);
-        m.mul(right);
-        return m;
+    public Matrix setColumn(int index, MatrixBase column) {
+        return (Matrix) setRow(this, index, column);
     }
 
-    public static Matrix randomNumbers(int height, int width, float min, float max) {
-        if (max < min) {
-            throw new RuntimeException();
-        }
-        var m = new Matrix(height, width);
-        for (int i = 0; i < height * width; ++i) {
-            m.matrix[i] = (float) Math.random() * (max - min) + min;
-        }
-        return m;
-    }
-
-    public void mul(MatrixBase right) {
-        baseMulCheck(this, right);
-        var m = new Matrix(rows, right.columns);
-        baseMul(this, right, m);
-        rows = m.rows;
-        columns = m.columns;
+    public Matrix mul(MatrixBase right) {
+        if (columns != right.rows) throw new RuntimeException("Row-column count mismatch");
+        Matrix left = new Matrix(this);
+        columns = right.columns;
         matrix = new float[rows * columns];
-        System.arraycopy(m.matrix, 0, matrix, 0, rows * columns);
+
+        mul(left, right, this);
+        return this;
     }
 
     @Override
     public String toString() {
         return super.baseToString("Matrix");
+    }
+
+    @Override
+    protected MatrixBase createInstance(int rows, int columns) {
+        return new Matrix(rows, columns);
     }
 }
